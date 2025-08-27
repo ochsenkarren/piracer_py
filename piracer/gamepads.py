@@ -170,44 +170,59 @@ class ShanWanGamepad(Joystick):
         _, button_number, button_state, _, axis_number, axis_val = super(ShanWanGamepad, self).poll()
 
         # Joysticks
-        if axis_number      == 0:
+        if axis_number      == 0: #L.x
             self.gamepad_input.analog_stick_left.x  = axis_val
-        elif axis_number    == 1:
+        elif axis_number    == 1: #L.y
             self.gamepad_input.analog_stick_left.y  = -axis_val
-        elif axis_number    == 2:
+        elif axis_number    == 3: #R.x
             self.gamepad_input.analog_stick_right.x = axis_val
-        elif axis_number    == 3:
+        elif axis_number    == 4: #R.y
             self.gamepad_input.analog_stick_right.y = -axis_val
+		# Triggers
+        elif axis_number    == 2: #l2
+            self.gamepad_input.button_l2 = 1 if -0.9 < axis_val else 0
+        elif axis_number    == 5: #r2
+            self.gamepad_input.button_r2 = 1 if -0.9 < axis_val else 0
+
+		# Horizontal D-pad
+		#elif axis_number == 6:
+		# Vertical D-pad
+        #elif axis_number == 7:
+
         # Buttons
         elif button_number  == 0:
             self.gamepad_input.button_a = button_state
         elif button_number  == 1:
             self.gamepad_input.button_b = button_state
         elif button_number  == 2: 
-            pass
-        elif button_number  == 3:
             self.gamepad_input.button_x = button_state
-        elif button_number  == 4:
+        elif button_number  == 3:
             self.gamepad_input.button_y = button_state
-        elif button_number  == 5:
-            pass        
-        elif button_number  == 6:
+        elif button_number  == 4:
             self.gamepad_input.button_l1 = button_state
-        elif button_number  == 7:
+        elif button_number  == 5:
             self.gamepad_input.button_r1 = button_state       
-        elif button_number  == 8:
-            self.gamepad_input.button_l2 = button_state
-        elif button_number  == 9:
-            self.gamepad_input.button_r2 = button_state       
-        elif button_number  == 10:
+        elif button_number  == 6:
             self.gamepad_input.button_select = button_state
-        elif button_number  == 11:
+        elif button_number  == 7:
             self.gamepad_input.button_start = button_state
-        elif button_number  == 12:
+        elif button_number  == 8:
             self.gamepad_input.button_home = button_state
-        elif button_number  == 13:
+        elif button_number  == 9:
             self.gamepad_input.analog_stick_left.z = button_state
-        elif button_number  == 14:
+        elif button_number  == 10:
             self.gamepad_input.analog_stick_right.z = button_state
+        elif button_number  == 11:
+            print("12 pressed but it could be never happend\n")
+#self.gamepad_input.button_home = button_state
+        elif button_number  == 12:
+            print("12 pressed but it could be never happend\n")
+#self.gamepad_input.button_home = button_state
+        elif button_number  == 13:
+            print("13 pressed but it could be never happend\n")
+#self.gamepad_input.analog_stick_left.z = button_state
+        elif button_number  == 14:
+            print("14 pressed but it could be never happend\n")
+#           self.gamepad_input.analog_stick_right.z = button_state
 
         return self.gamepad_input
