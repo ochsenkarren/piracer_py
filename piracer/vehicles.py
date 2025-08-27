@@ -1,3 +1,4 @@
+# vehicles.py (patched for no OLED)
 # Copyright (C) 2022 twyleg
 import math
 import time
@@ -7,7 +8,11 @@ from abc import abstractmethod
 from board import SCL, SDA
 from adafruit_pca9685 import PCA9685
 from adafruit_ina219 import INA219
-from adafruit_ssd1306 import SSD1306_I2C
+
+try:
+    from adafruit_ssd1306 import SSD1306_I2C
+except ImportError:
+    SSD1306_I2C = None
 
 
 class PiRacerBase:
@@ -32,8 +37,16 @@ class PiRacerBase:
         return 0.0015 + (value * 0.0005)
 
     def __init__(self) -> None:
+        # 항상 I2C 버스 초기화
         self.i2c_bus = busio.I2C(SCL, SDA)
-        self.display = SSD1306_I2C(128, 32, self.i2c_bus, addr=0x3c)
+
+        # OLED 디스플레이는 optional
+        self.display = None
+        if SSD1306_I2C is not None:
+            try:
+                self.display = SSD1306_I2C(128, 32, self.i2c_bus, addr=0x3c)
+            except Exception as e:
+                print("⚠️ Warning: No OLED display found:", e)
 
     def _warmup(self) -> None:
         self.set_steering_percent(0.0)
@@ -52,8 +65,8 @@ class PiRacerBase:
         """Returns the current power consumption of the system in W."""
         return self.battery_monitor.power
 
-    def get_display(self) -> SSD1306_I2C:
-        """Returns a display object to draw on the display."""
+    def get_display(self):
+        """Returns a display object to draw on the display, or None if not present."""
         return self.display
 
     @abstractmethod
@@ -82,22 +95,18 @@ class PiRacerPro(PiRacerBase):
         self._warmup()
 
     def set_steering_percent(self, value: float) -> None:
-        """Set the desired steering value in percent.
-
-        :param float value: Steering angle in percent (left: 0.0 to -1.0, right: 0.0 to +1.0, neutral: 0.0)
-        """
-        self._set_channel_active_time(self._get_50hz_duty_cycle_from_percent(-value), self.pwm_controller,
-                                      self.PWM_STEERING_CHANNEL)
+        self._set_channel_active_time(
+            self._get_50hz_duty_cycle_from_percent(-value),
+            self.pwm_controller,
+            self.PWM_STEERING_CHANNEL
+        )
 
     def set_throttle_percent(self, value: float) -> None:
-        """Set the desired throttle value in percent. When the value changes from value>0 to value<0, the ESC
-        interprets this as a brake command. To go backwards you have to go from value>0 to value=0 first, wait for
-        a few moments (exact time is unknown) and afterwards to value<0 to go backwards.
-
-       :param float value: Throttle in percent (forward: 0.0 to +1.0, backward/brake: 0.0 to -1.0, neutral: 0.0)
-        """
-        self._set_channel_active_time(self._get_50hz_duty_cycle_from_percent(value), self.pwm_controller,
-                                      self.PWM_THROTTLE_CHANNEL)
+        self._set_channel_active_time(
+            self._get_50hz_duty_cycle_from_percent(value),
+            self.pwm_controller,
+            self.PWM_THROTTLE_CHANNEL
+        )
 
 
 class PiRacerStandard(PiRacerBase):
@@ -126,32 +135,25 @@ class PiRacerStandard(PiRacerBase):
         self._warmup()
 
     def set_steering_percent(self, value: float) -> None:
-        """Set the desired steering value in percent.
-
-        :param float value: Steering angle in percent (left: 0.0 to -1.0, right: 0.0 to +1.0, neutral: 0.0)
-        """
-        self._set_channel_active_time(self._get_50hz_duty_cycle_from_percent(-value), self.steering_pwm_controller,
-                                      self.PWM_STEERING_CHANNEL)
-        pass
+        self._set_channel_active_time(
+            self._get_50hz_duty_cycle_from_percent(-value),
+            self.steering_pwm_controller,
+            self.PWM_STEERING_CHANNEL
+        )
 
     def set_throttle_percent(self, value: float) -> None:
-        """Set the desired throttle value in percent.
-
-        :param float value: Throttle in percent (forward: 0.0 to +1.0, backward: 0.0 to -1.0, brake: 0.0)
-        """
         if value > 0:
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_LEFT_MOTOR_IN1].duty_cycle = self.PWM_MAX_RAW_VALUE
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_LEFT_MOTOR_IN2].duty_cycle = 0
-
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_RIGHT_MOTOR_IN1].duty_cycle = 0
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_RIGHT_MOTOR_IN2].duty_cycle = self.PWM_MAX_RAW_VALUE
         else:
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_LEFT_MOTOR_IN1].duty_cycle = 0
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_LEFT_MOTOR_IN2].duty_cycle = self.PWM_MAX_RAW_VALUE
-
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_RIGHT_MOTOR_IN1].duty_cycle = self.PWM_MAX_RAW_VALUE
             self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_RIGHT_MOTOR_IN2].duty_cycle = 0
 
         pwm_raw_value = int(self.PWM_MAX_RAW_VALUE * abs(value))
         self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_LEFT_MOTOR_PWM].duty_cycle = pwm_raw_value
         self.throttle_pwm_controller.channels[self.PWM_THROTTLE_CHANNEL_RIGHT_MOTOR_PWM].duty_cycle = pwm_raw_value
+
