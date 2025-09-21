@@ -11,10 +11,9 @@ from piracer.gamepads import ShanWanGamepad  # 네가 가진 gamepad.py import
 class GamepadService(object):
     """
     <node>
-      <interface name='org.example.Gamepad'>
+      <interface name='org.team9.IC'>
         <property name='Throttle' type='s' access='read'/>
         <property name='Steering' type='s' access='read'/>
-        <property name='Speed' type='i' access='read'/>
         <signal name='ValueChanged'>
           <arg type='s' name='key'/>
           <arg type='s' name='value'/>
@@ -28,7 +27,6 @@ class GamepadService(object):
     def __init__(self):
         self.Throttle = "none"
         self.Steering = "none"
-        self.Speed = 0
 
     def emit_value_changed(self, key, value):
         print(f"[Signal] {key} -> {value}")
@@ -38,8 +36,8 @@ class GamepadService(object):
 def main():
     bus = SessionBus()
     service = GamepadService()
-    bus.publish("org.example.Gamepad", service)
-    print("🚀 GamepadService published on DBus: org.example.Gamepad")
+    bus.publish("org.team9.IC", service)
+    print("🚀 GamepadService published on DBus: org.team9.IC")
 
     # 조이스틱 초기화
     pad = ShanWanGamepad()
@@ -49,22 +47,10 @@ def main():
     def poll_gamepad():
         data = pad.read_data()
 
-        # throttle: L.y (앞뒤)
-        if data.analog_stick_left.y > MIN_TH:
-            throttle = "forward"
-        elif data.analog_stick_left.y < -MIN_TH:
-            throttle = "backward"
-        else:
-            throttle = "none"
-
-        if throttle != service.Throttle:
-            service.Throttle = throttle
-            service.emit_value_changed("Throttle", throttle)
-
-        # steering: R.x (좌우)
-        if data.analog_stick_right.x > MIN_TH:
+        # steering: L.x (좌우)
+        if data.analog_stick_left.x > MIN_TH:
             steering = "right"
-        elif data.analog_stick_right.x < -MIN_TH:
+        elif data.analog_stick_left.x < -MIN_TH:
             steering = "left"
         else:
             steering = "none"
@@ -72,6 +58,18 @@ def main():
         if steering != service.Steering:
             service.Steering = steering
             service.emit_value_changed("Steering", steering)
+
+        # throttle: R.y (앞뒤)
+        if data.analog_stick_right.y > MIN_TH:
+            throttle = "forward"
+        elif data.analog_stick_right.y < -MIN_TH:
+            throttle = "backward"
+        else:
+            throttle = "none"
+
+        if throttle != service.Throttle:
+            service.Throttle = throttle
+            service.emit_value_changed("Throttle", throttle)
 
         return True  # GLib 타이머 계속 실행
 
