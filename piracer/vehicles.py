@@ -57,6 +57,14 @@ class PiRacerBase:
         """Returns the current battery voltage in V."""
         return self.battery_monitor.bus_voltage + self.battery_monitor.shunt_voltage
 
+    def get_battery_bus_voltage(self) -> float:
+        """Returns the current battery voltage in V."""
+        return self.battery_monitor.bus_voltage
+
+    def get_battery_shunt_voltage(self) -> float:
+        """Returns the current battery voltage in V."""
+        return self.battery_monitor.shunt_voltage
+
     def get_battery_current(self) -> float:
         """Returns the current battery current in mA."""
         return self.battery_monitor.current

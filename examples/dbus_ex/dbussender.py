@@ -73,17 +73,22 @@ def main():
     MIN_TH = 0.125
     def update_battery_info():
         service.Voltage = str(piracer.get_battery_voltage())
-        service.emit_value_changed("Voltage", service.Voltage)
-        service.Current = str(piracer.get_battery_current())
-        service.emit_value_changed("Current", service.Current)
-        service.Power_Consumtion = str(piracer.get_power_consumption())
-        service.emit_value_changed("Power_Consumtion", service.Power_Consumtion)
+        service.emit_value_changed("V_Total", service.Voltage)
+        service.Voltage = str(piracer.get_battery_shunt_voltage())
+        service.emit_value_changed("V_shunt", service.Voltage)
+        current = piracer.get_battery_current();
+        service.emit_value_changed("Charging", "true" if 250 < current else "false")
+        service.Current = str(current)
+        service.emit_value_changed("I_Char", service.Current)
+	#service.Power_Consumtion = str(piracer.get_power_consumption())
+        #service.emit_value_changed("Power_Consumtion", service.Power_Consumtion)
+        print()
         return True
 
     # a thread for blocking task (read_data() from gamepad)
     threading.Thread(target=gamepad_loop, args=(pad, service), daemon=True).start()
     #GLib.timeout_add(100, poll_gamepad)
-    GLib.timeout_add(2000, update_battery_info)
+    GLib.timeout_add(200, update_battery_info)
     loop = GLib.MainLoop()
 
     # to make process can read SIGINT (Ctrl+C)
@@ -99,4 +104,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
